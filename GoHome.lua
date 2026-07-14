@@ -33,8 +33,26 @@ local state = {
     destination_zone  = "Port Jeuno",
     target_hp_index   = nil,
     waypoints         = {},
-    movement_active   = false
+    movement_active   = false,
+    debug             = true
 }
+
+local function log_info(msg)
+    local prefix = "\31\200[\31\05GoHome\31\200]\31\207 "
+    windower.add_to_chat(1, prefix .. tostring(msg))
+end
+
+local function log_error(msg)
+    local prefix = "\31\200[\31\05GoHome Addon\31\200] \31\123ERROR:\31\207 "
+    windower.add_to_chat(1, prefix .. tostring(msg))
+end
+
+local function log_debug(msg)
+    if state.debug then
+        local prefix = "\31\200[\31\05GoHome Addon\31\200] \31\200DEBUG:\31\207 "
+        windower.add_to_chat(1, prefix .. tostring(msg))
+    end
+end
 
 local function initialize_player_data()
     local player = windower.ffxi.get_player()
@@ -56,13 +74,14 @@ local function initialize_player_data()
         -- Unaligned / Mercenary status default values
         state.destination_zone = "Port Jeuno"
         state.target_hp_index  = 58
+        log_error('No nation found, setting HP to Port Jeuno.')
     end
 
     state.player_loaded = true
 
     -- Print startup validation sequence to chat
-    windower.add_to_chat(207, '[GoHome] Initialized. Nation: ' .. state.nation_name)
-    windower.add_to_chat(207, '[GoHome] Targeted Destination: ' .. state.destination_zone)
+    log_info('Initialized.   Nation: ' .. state.nation_name .. ' -> ' .. state.destination_zone)
+    log_debug('Data Loaded. Nation ID: ' .. state.nation_id .. ' | Target HP Index: ' .. state.target_hp_index)
 end
 
 windower.register_event('load', function()
@@ -108,7 +127,7 @@ local function walk_to_coordinates(waypoint_list)
             local target_x = waypoint_list[i][1]
             local target_y = waypoint_list[i][2]
             
-            windower.add_to_chat(207, string.format("[GoHome] Moving to waypoint %d/%d...", i, #waypoint_list))
+            log_debug(string.format("Moving to waypoint %d/%d...", i, #waypoint_list))
             
             -- Keep running vector calculations until reaching this specific node
             while state.movement_active do
@@ -132,7 +151,7 @@ local function walk_to_coordinates(waypoint_list)
         -- Complete halt routine once all array entries are processed
         windower.ffxi.run(false) 
         state.movement_active = false
-        windower.add_to_chat(207, "[GoHome] Final destination reached successfully.")
+        log_info("Final destination reached successfully.")
     end, 0.1)
 end
 
@@ -143,7 +162,7 @@ windower.register_event('addon command', function(cmd, ...)
     if command == 'start' or command == 'run' then
         -- Enforce state configuration safety
         if not state.player_loaded or not state.target_hp_index then
-            windower.add_to_chat(123, "[GoHome] Error: No player data loaded or unsupported nation assignment.")
+            log_error("No player data loaded or unsupported nation assignment.")
             return
         end
 
@@ -159,18 +178,19 @@ windower.register_event('addon command', function(cmd, ...)
                 walk_to_coordinates(state.waypoints)
             else
                 -- At wrong location: build and run dynamic SuperWarp string assignment
-                windower.add_to_chat(207, "[GoHome] At a crystal, but wrong zone/index. Warping to " .. state.destination_zone .. "...")
+                log_info("Home Point found, but wrong crystal. Warping to " .. state.destination_zone .. "...")
                 windower.send_command('sw hp "' .. state.destination_zone .. '" mh')
+                -- !!! follow up with resume function after loading into next zone
             end
         else
             -- No crystal found OR crystal is too far away (> 5 yalms)
-            windower.add_to_chat(123, "[GoHome] No valid Home Point within 5 yalms. Initiating fallback warp...")
-            -- execute_fallback_warp()
+            log_info("No valid Home Point within 5 yalms. Initiating fallback warp...")
+            -- !!! execute_fallback_warp()
         end
 
     elseif command == 'stop' or command == 'abort' then
         state.movement_active = false
         windower.ffxi.run(false)
-        windower.add_to_chat(123, "[GoHome] Sequence manually aborted.")
+        log_info("Sequence manually aborted.")
     end
 end)
