@@ -5,23 +5,12 @@ _addon.commands = {'gohome', 'gh'}
 
 local res = require('resources')
 
+-- nation destination zones based on player.nation resource values
 local zone_table = {
-    [0] = "Port San d'Oria",
-    [1] = "Port Bastok",
-    [2] = "Port Windurst",
+    [0] = { zone = "Port San d'Oria",   index = 87  },
+    [1] = { zone = "Port Bastok",       index = 73  },
+    [2] = { zone = "Port Windurst",     index = 142 },
 }
-
-local player = windower.ffxi.get_player()
-
-
-if player then
-    local nation_name = res.regions[player.nation].english
-    local destination_zone = zone_table[player.nation] or "Port Jeuno"
-
-    -- debug text to chat
-    windower.add_to_chat(207, 'Current Nation: ' .. nation_name)
-    windower.add_to_chat(207, 'GoHome Zone: ' .. destination_zone)
-end
 
 local function find_nearby_homepoint()
     local mobs = windower.ffxi.get_mob_array()
@@ -48,7 +37,19 @@ end
 
 -- will become main loop
 windower.register_event('addon command', function(cmd, ...)
-    if cmd == 'findhp' then
+    if cmd == 'start' then
+        local player = windower.ffxi.get_player()
+        if not player then return end
+
+        local destination_zone = zone_table[player.nation].zone or "Port Jeuno"
+        if not destination_zone then
+            windower.add_to_chat(123, "[GoHome]: Error: Unsupported or invalid national allegiance.")
+            return
+        end
+
+            -- debug text to chat
+            windower.add_to_chat(207, 'Current Nation: ' .. nation_name)
+            windower.add_to_chat(207, 'GoHome Zone: ' .. destination_zone)
         local hp, dist = find_nearby_homepoint()
 
         if hp then
