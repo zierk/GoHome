@@ -1,6 +1,6 @@
 _addon.name = 'GoHome' 
 _addon.author = 'Zierk' 
-_addon.version = '0.0.1' 
+_addon.version = '1.0' 
 _addon.commands = {'gohome', 'gh'} 
 
 local res = require('resources') 
@@ -23,7 +23,7 @@ local state = {
 }
 
 local function log_info(msg) 
-    local prefix = "\31\200[\31\05GoHome\31\200]\31\207 " 
+    local prefix = "\31\200[\31\05GoHome Addon\31\200]\31\207 " 
     windower.add_to_chat(1, prefix .. tostring(msg)) 
 end 
 
